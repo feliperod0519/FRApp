@@ -13,6 +13,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using API.Data;
 using Microsoft.EntityFrameworkCore;
+using API.Services;
+using API.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using API.Extensions;
 
 namespace API
 {
@@ -31,16 +36,33 @@ namespace API
         public void ConfigureServices(IServiceCollection services)
         {
             
+            /*
+            services.AddScoped<ITokenService,TokenService>();
             services.AddDbContext<DataContext>(opt=>
                                                     { 
                                                         opt.UseSqlite(_conf.GetConnectionString("DefaultConnection"));
                                                     });
-
+            */
+            services.AddApplicationServices(_conf);
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebAPIv5", Version = "v1" });
             });
+            services.AddCors();
+            services.AddIdentityServices(_conf);
+            /*
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options=>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters{
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(_conf["TokenKey"])),
+                        ValidateIssuer = false,
+                        ValidateAudience = false
+                    };
+                }
+            );
+            */
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -59,6 +81,7 @@ namespace API
 
             app.UseCors(policy => policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("https://localhost:4200"));
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
